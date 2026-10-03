@@ -4,7 +4,7 @@ Project No.: 2
 Dataset Description Generation
 
 Group members:
-1) Riyansh Sachdev 
+1) Riyansh Sachdev \n
 Net ID: rs10248
 Email: rs10248@nyu.edu
 
