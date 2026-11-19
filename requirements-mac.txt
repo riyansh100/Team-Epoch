@@ -1,0 +1,5 @@
+# Mac-side LLM scripts (mac/zen_smoke_test.py, mac/generate_descriptions.py). Python >= 3.10.
+# AutoDDG pinned to a GitHub commit: PyPI autoddg==0.1.2 is older (its AutoDDG() does not accept an LLMClient and it
+# lacks profiling.summarize/profile_metadata). The same pin is used by the Colab notebooks.
+# autoddg brings openai==1.61.0, pandas, httpx, datamart_profiler, rank-bm25, nltk, scikit-learn, fastembed.
+autoddg @ https://github.com/VIDA-NYU/AutoDDG/archive/f286ac697bdb0a199eac1ce0778401f30341b4bb.zip

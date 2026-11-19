@@ -1,0 +1,7 @@
+# extra packages to run tests/test_pipeline.py (notebooks executed headlessly)
+pytest
+nbclient
+nbformat
+ipykernel
+matplotlib
+huggingface_hub
