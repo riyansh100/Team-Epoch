@@ -60,8 +60,8 @@ groups of human assessors agree (about 62% relevant/not agreement, kappa 0.23).
 python3 labeling/export_release.py --source results/ntcir_ddg_intermediate.zip --llm-labels results/labels_final/labels.jsonl --dsebench results/dsebench --out ntcir_ddg_labels
 ```
 
-It rewrites the data files in `ntcir_ddg_labels/` (queries, datasets, all three label sources, TREC qrels) and checks
-that the LLM covered every pair. The data card there (`README.md`) is kept by hand.
+It rewrites the CSV files in `ntcir_ddg_labels/` (queries, datasets, NTCIR, LLM and DSEBench labels) and checks that
+the LLM covered every pair. The data card there (`README.md`) is kept by hand.
 
 ## Why Opus 5.5 with high effort (pilot)
 

@@ -3,8 +3,8 @@
     python3 labeling/export_release.py --source results/ntcir_ddg_intermediate.zip \
         --llm-labels results/labels_final/labels.jsonl --dsebench results/dsebench --out ntcir_ddg_labels
 
-Writes queries.tsv, datasets.jsonl, judgments.tsv (one row per query x dataset, all three label sources side by side)
-and qrels/*.txt in TREC format. README.md, the prompt copy and the licence files are kept by hand in the folder.
+Writes queries.csv, datasets.csv, human_labels.csv (NTCIR), llm_labels.csv and extra/dsebench_labels.csv. README.md
+and the other files in extra/ (prompt copy, DSEBench licence) are kept by hand.
 """
 from __future__ import annotations
 
@@ -115,12 +115,6 @@ def load_datasets(src: Path) -> list[dict]:
     return out
 
 
-def write_trec(path: Path, qrels: dict[tuple[str, str], int]) -> None:
-    with open(path, "w", encoding="utf-8") as f:
-        for (q, d), g in sorted(qrels.items()):
-            f.write(f"{q} 0 {d} {g}\n")
-
-
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--source", type=Path, required=True, help="notebook-01 zip or unpacked folder")
@@ -148,26 +142,31 @@ def main() -> None:
     assert len(models) == 1, f"several labelling models: {models}"
 
     out = args.out
-    (out / "qrels").mkdir(parents=True, exist_ok=True)
-    with open(out / "queries.tsv", "w", encoding="utf-8", newline="") as f:
-        w = csv.writer(f, delimiter="\t", lineterminator="\n")
-        w.writerow(["qid", "query"])
-        w.writerows(sorted(queries.items()))
-    with open(out / "datasets.jsonl", "w", encoding="utf-8") as f:
-        for d in datasets:
-            f.write(json.dumps(d, ensure_ascii=False) + "\n")
-    with open(out / "judgments.tsv", "w", encoding="utf-8", newline="") as f:
-        w = csv.writer(f, delimiter="\t", lineterminator="\n")
-        w.writerow(["qid", "doc_id", "in_ntcir_pool", "ntcir", "dsebench", "dsebench_votes", "llm", "llm_reason"])
-        for q in sorted(queries):
-            for d in ids:
-                k = (q, d)
-                w.writerow([q, d, int(k in ntcir), ntcir.get(k, ""), dse.get(k, ""),
-                            ",".join(map(str, sorted(dse_in[k]))) if k in dse_in else "",
-                            llm[k]["grade"], llm[k]["why"]])
-    write_trec(out / "qrels" / "ntcir.txt", ntcir)
-    write_trec(out / "qrels" / "dsebench.txt", dse)
-    write_trec(out / "qrels" / "llm_opus55.txt", {k: r["grade"] for k, r in llm.items()})
+    (out / "extra").mkdir(parents=True, exist_ok=True)
+    titles = {d["id"]: d["title"] for d in datasets}
+
+    def write_csv(path: Path, header: list[str], rows) -> None:
+        with open(path, "w", encoding="utf-8", newline="") as f:
+            w = csv.writer(f, lineterminator="\n")
+            w.writerow(header)
+            w.writerows(rows)
+
+    write_csv(out / "queries.csv", ["qid", "query"], sorted(queries.items()))
+    cols = ["doc_id", "title", "description", "publisher", "url", "license", "attribution", "table_url", "n_rows",
+            "n_cols", "table_header"]
+    write_csv(out / "datasets.csv", cols,
+              ([d["id"], d["title"], d["description"], d["publisher"], d["url"], d["license"], d["attribution"],
+                d["table_url"], d["n_rows"], d["n_cols"], json.dumps(d["columns"], ensure_ascii=False)]
+               for d in datasets))
+    label_cols = ["qid", "query", "doc_id", "title", "grade"]
+    write_csv(out / "human_labels.csv", label_cols,
+              ([q, queries[q], d, titles[d], g] for (q, d), g in sorted(ntcir.items())))
+    write_csv(out / "llm_labels.csv", label_cols + ["reason"],
+              ([q, queries[q], d, titles[d], llm[(q, d)]["grade"], llm[(q, d)]["why"]]
+               for q in sorted(queries) for d in ids))
+    write_csv(out / "extra" / "dsebench_labels.csv", label_cols + ["votes"],
+              ([q, queries[q], d, titles[d], g, " ".join(map(str, sorted(dse_in[(q, d)])))]
+               for (q, d), g in sorted(dse.items())))
 
     def dist(q):
         return dict(sorted(collections.Counter(q.values()).items()))
